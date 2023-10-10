@@ -45,9 +45,22 @@ const getRawData = async (api, genres, paging) => {
       `${api}${paging ? `&page=${i}` : ""}`
     );
     createArrayFromRawData(results, moviesArray, genres);
-    return moviesArray;
   }
+  return moviesArray;
 };
+
+export const fetchDataByGenre = createAsyncThunk(
+  "netflix/genre",
+  async ({ genre, type }, thunkAPI) => {
+    const {
+      netflix: { genres },
+    } = thunkAPI.getState();
+    return getRawData(
+      `https://api.themoviedb.org/3/discover/${type}?api_key=14be2e46ee86e19c6f680b2c8588a93d&with_genres=${genre}`,
+      genres
+    );
+  }
+);
 
 export const fetchMovies = createAsyncThunk(
   "netflix/trending",
@@ -75,6 +88,9 @@ const NetflixSlice = createSlice({
       state.genresLoaded = true;
     });
     builder.addCase(fetchMovies.fulfilled, (state, action) => {
+        state.movies = action.payload;
+      });
+    builder.addCase(fetchDataByGenre.fulfilled, (state, action) => {
         state.movies = action.payload;
       });
   },
