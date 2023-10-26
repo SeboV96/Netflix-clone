@@ -1,16 +1,40 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import video from "../assets/video.mp4";
 import styled from "styled-components";
 import { IoPlayCircleSharp } from "react-icons/io5";
 import { AiOutlinePlus } from "react-icons/ai";
 import { RiThumbUpFill, RiThumbDownFill } from "react-icons/ri";
 import { BiChevronDown } from "react-icons/bi";
 import { BsCheck } from "react-icons/bs";
+import axios from "axios";
+import { onAuthStateChanged } from "firebase/auth";
+import { firebaseAuth } from "../utils/firebase-config";
+import { useDispatch } from "react-redux";
+import { removeMovieFromLiked } from "../store";
+import video from "../assets/video.mp4";
 
-export default React.memo( function Card({ movieData, isLiked = false }) {
+export default React.memo(function Card({ index, movieData, isLiked = false }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isHovered, setIsHovered] = useState(false);
+  const [email, setEmail] = useState(undefined);
+
+  onAuthStateChanged(firebaseAuth, (currentUser) => {
+    if (currentUser) {
+      setEmail(currentUser.email);
+    } else navigate("/login");
+  });
+
+  const addToList = async () => {
+    try {
+      await axios.post("http://localhost:5000/api/user/add", {
+        email,
+        data: movieData,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <Container
@@ -54,16 +78,14 @@ export default React.memo( function Card({ movieData, isLiked = false }) {
                 {isLiked ? (
                   <BsCheck
                     title="Remove from List"
-                    // onClick={() =>
-                    //   dispatch(
-                    //     removeMovieFromLiked({ movieId: movieData.id, email })
-                    //   )
-                    // }
+                    onClick={() =>
+                      dispatch(
+                        removeMovieFromLiked({ movieId: movieData.id, email })
+                      )
+                    }
                   />
                 ) : (
-                  <AiOutlinePlus title="Add to my list" 
-                //   onClick={addToList}
-                   />
+                  <AiOutlinePlus title="Add to my list" onClick={addToList} />
                 )}
               </div>
               <div className="info">
@@ -83,7 +105,6 @@ export default React.memo( function Card({ movieData, isLiked = false }) {
     </Container>
   );
 });
-
 
 const Container = styled.div`
   max-width: 230px;
@@ -127,7 +148,7 @@ const Container = styled.div`
         border-radius: 0.3rem;
         top: 0;
         z-index: 5;
-        position: relative;
+        position: absolute;
       }
     }
     .info-container {
